@@ -5,37 +5,52 @@ import { misInversiones } from '../global';
 
 export default function HomeScreen() {
   // Este estado solo sirve para obligar a la pantalla a actualizarse
-  const [refresh, setRefresh] = useState(0);
+  const [datosActuales, setDatosActuales] = useState([...misInversiones]);
 
   useFocusEffect(
     useCallback(() => {
-      // Sumamos 1 al estado para que React "re-renderice" la pantalla
-      setRefresh(prev => prev + 1);
+      // CADA VEZ QUE ENTRAS A LA PANTALLA:
+      // Forzamos una copia nueva del array global al estado local
+      setDatosActuales([...misInversiones]);
     }, [])
   );
 
-  const totalBalance = misInversiones.reduce((sum, inv) => sum + inv.valor, 0);
+  const totalBalance = datosActuales.reduce((sum, inv) => sum + inv.valor, 0);
 
   return (
-    <ScrollView style={styles.container} key={refresh}> 
+    <ScrollView style={styles.container}> 
       <View style={styles.header}>
-        <Text style={styles.subtitle}>TOTAL BALANCE</Text>
+        <Text style={styles.subtitle}>BALANCE TOTAL</Text>
         <Text style={styles.balance}>${totalBalance.toFixed(2)}</Text>
-        
         <View style={styles.badge}>
-          <Text style={styles.badgeText}>+12.5% this week</Text>
+          <Text style={styles.badgeText}>+12.5% esta semana</Text>
         </View>
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Your Investments</Text>
+        <Text style={styles.sectionTitle}>Tus Inversiones</Text>
         
-        {misInversiones.map((inv) => (
-          <View key={inv.id} style={styles.card}>
-            <Text style={styles.cardName}>{inv.nombre}</Text>
-            <Text style={styles.cardValue}>${inv.valor.toFixed(2)}</Text>
-          </View>
-        ))}
+        {datosActuales.map((inv) => {
+          const gananciaUsd = inv.valor - inv.costo;
+          const rendimientoPct = (gananciaUsd / inv.costo) * 100;
+          const esPositivo = gananciaUsd >= 0;
+
+          return (
+            <View key={inv.id} style={styles.card}>
+              <View style={{ flex: 1.5 }}>
+                <Text style={styles.cardName}>{inv.nombre}</Text>
+                <Text style={styles.cardQty}>{inv.cantidad.toFixed(4)} {inv.nombre}</Text>
+              </View>
+
+              <View style={{ flex: 1, alignItems: 'flex-end' }}>
+                <Text style={styles.cardValue}>${inv.valor.toFixed(2)}</Text>
+                <Text style={[styles.rendimiento, { color: esPositivo ? '#10B981' : '#EF4444' }]}>
+                  {esPositivo ? '+' : ''}{gananciaUsd.toFixed(2)} ({rendimientoPct.toFixed(2)}%)
+                </Text>
+              </View>
+            </View>
+          );
+        })}
       </View>
     </ScrollView>
   );
@@ -50,7 +65,27 @@ const styles = StyleSheet.create({
   badgeText: { color: '#FFFFFF', fontWeight: '700', fontSize: 12 },
   section: { paddingHorizontal: 20 },
   sectionTitle: { color: '#F8FAFC', fontSize: 18, fontWeight: '700', marginBottom: 16 },
-  card: { backgroundColor: '#1E293B', padding: 16, borderRadius: 12, flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12, borderWidth: 1, borderColor: '#334155' },
-  cardName: { color: '#CBD5E1', fontSize: 16 },
+  cardName: { color: '#CBD5E1', fontSize: 16, fontWeight: 'bold' },
   cardValue: { color: '#F8FAFC', fontSize: 16, fontWeight: '600' },
+  rendimiento: {
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 4,
+  },
+  cardQty: {
+    color: '#94A3B8',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  card: { 
+    backgroundColor: '#1E293B', 
+    padding: 16, 
+    borderRadius: 16, 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center',
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#334155'
+  },
 });

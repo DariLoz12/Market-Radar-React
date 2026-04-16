@@ -9,26 +9,24 @@ export default function ExploreScreen() {
   const [precio, setPrecio] = useState('');
   const router = useRouter(); // <--- 3. CREAMOS EL CONTROLADOR DEL NAVEGADOR
 
-  const guardarInversion = () => {
-    if (!activo || !monto || !precio) {
-      Alert.alert("Error", "Por favor completa todos los campos");
-      return;
-    }
-    
-    // 4. CALCULAMOS EL TOTAL (Cantidad * Precio)
-    const valorTotal = parseFloat(monto) * parseFloat(precio);
+const guardarInversion = () => {
+  if (!activo || !monto || !precio) {
+    Alert.alert("Error", "Por favor completa todos los campos");
+    return;
+  }
+  
+  const valorTotal = parseFloat(monto) * parseFloat(precio);
 
-    // 5. LLAMAMOS A LA FUNCIÓN GLOBAL PARA GUARDAR
-    actualizarInversiones(activo, valorTotal);
-    
-    Alert.alert("¡Éxito!", `Agregaste ${activo} a tu cartera`);
-    
-    // 6. LIMPIAMOS Y VOLVEMOS AL INICIO
-    setActivo('');
-    setMonto('');
-    setPrecio('');
-    router.replace('/'); // Esto refresca el Home
-  };
+  // Llamamos a la función (la lógica nueva en global.js hará el resto)
+  actualizarInversiones(activo, valorTotal);
+  
+  Alert.alert("¡Éxito!", `Cartera actualizada: ${activo.toUpperCase()}`);
+  
+  setActivo('');
+  setMonto('');
+  setPrecio('');
+  router.replace('/'); 
+};
 
   return (
     <View style={styles.container}>
@@ -65,7 +63,7 @@ export default function ExploreScreen() {
         />
 
         <TouchableOpacity style={styles.button} onPress={guardarInversion}>
-          <Text style={styles.buttonText}>Agregar a mi Cartera</Text>
+          <Text style={styles.buttonText}>Agregar a mi Portfolio</Text>
         </TouchableOpacity>
       </View>
     </View>
