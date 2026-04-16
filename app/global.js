@@ -9,4 +9,3 @@ export var misInversiones = [
       nombre: nombreIngresado, // Usamos "nombre"
       valor: parseFloat(valorIngresado) // Usamos "valor"
     });
-  };
