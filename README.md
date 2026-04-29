@@ -1,50 +1,82 @@
-# Welcome to your Expo app 👋
+# 📊 Market Radar
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Market Radar es una aplicación web que permite a los usuarios registrar y gestionar sus inversiones de forma simple, facilitando el seguimiento del rendimiento de su portfolio en tiempo real.
 
-## Get started
+---
 
-1. Install dependencies
+## 🚀 Características
 
-   ```bash
-   npm install
-   ```
+- 📁 Creación y gestión de portfolios
+- 💰 Registro de inversiones
+  - Activo (BTC, AAPL, etc.)
+  - Cantidad
+  - Precio de compra
+  - Fecha
+- 📈 Visualización del balance total
+- 📊 Seguimiento de ganancias/pérdidas
+- 🔐 Sistema de autenticación (en desarrollo)
 
-2. Start the app
+---
 
-   ```bash
-   npx expo start
-   ```
+## 🛠️ Tecnologías utilizadas
 
-In the output, you'll find options to open the app in a
+- **Frontend:** React
+- **Backend:** Node.js
+- **UI / Web:** Expo
+- **Lenguaje:** JavaScript
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+---
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## 📸 Screenshots
 
-## Get a fresh project
+> Agregá acá capturas de la app
 
-When you're ready, run:
+- Dashboard de portfolio
+- Formulario de nueva inversión
+
+---
+
+## ⚙️ Instalación y ejecución
+
+### 1. Clonar el repositorio
 
 ```bash
-npm run reset-project
+git clone https://github.com/DariLoz12/market-radar.git
+cd market-radar
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### 2. Instalar dependencias
 
-## Learn more
+```bash
+npm install
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+### 3. Ejecutar la app
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+npx expo start
+```
 
-## Join the community
+La aplicación estará disponible en:
 
-Join our community of developers creating universal apps.
+```
+http://localhost:8081
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+---
+
+## 🤝 Contribuciones
+
+Las contribuciones son bienvenidas. Podés abrir un issue o enviar un pull request.
+
+---
+
+## 📄 Licencia
+
+Este proyecto está bajo la licencia MIT.
+
+---
+
+## 👨‍💻 Autores
+
+Desarrollado por [Darío Lozano, Luciano Aguirre, Gaston Medici, Alan Guillardoy]
