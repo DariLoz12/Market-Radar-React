@@ -29,10 +29,14 @@ Market Radar es una aplicación web que permite a los usuarios registrar y gesti
 
 ## 📸 Screenshots
 
-> Agregá acá capturas de la app
-
 - Dashboard de portfolio
-- Formulario de nueva inversión
+   <p align="center">
+      <img src="./screenshots/portfolio.png" width="700"/>
+   </p>
+- Agregar Inversión
+   <p align="center">
+      <img src="./screenshots/agregarinversion.png" width="700"/>
+   </p>
 
 ---
 
