@@ -1,12 +1,83 @@
 import { useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import Svg, { Line, Path, Circle, Text as SvgText } from 'react-native-svg';
 import { actualizarPreciosEnTiempoReal, misInversiones } from '../global'; // Asegúrate de importar la función
 
 export default function HomeScreen() {
   const [datosActuales, setDatosActuales] = useState([...misInversiones]);
   const [cargandoPrecios, setCargandoPrecios] = useState(false);
+  const [cargandoGrafico, setCargandoGrafico] = useState(false);
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState('todos');
+  const [historiasSemana, setHistoriasSemana] = useState<Record<string, number[]>>({});
+
+  const buscarIdCoingecko = async (ticker: string): Promise<string | null> => {
+    try {
+      const respuestaSearch = await fetch(`https://api.coingecko.com/api/v3/search?query=${ticker}`);
+      const datosSearch = await respuestaSearch.json();
+      const monedaEncontrada = datosSearch.coins?.find(
+        (coin: any) =>
+          coin.symbol?.toUpperCase() === ticker ||
+          coin.name?.toUpperCase() === ticker ||
+          coin.id?.toUpperCase() === ticker
+      );
+
+      if (monedaEncontrada) {
+        return monedaEncontrada.id;
+      }
+
+      const monedaFallback = datosSearch.coins?.find(
+        (coin: any) =>
+          coin.symbol?.toUpperCase().includes(ticker) ||
+          coin.name?.toUpperCase().includes(ticker) ||
+          coin.id?.toUpperCase().includes(ticker)
+      );
+
+      return monedaFallback ? monedaFallback.id : null;
+    } catch (err) {
+      console.error(`Error buscando ID de CoinGecko para gráfico ${ticker}:`, err);
+      return null;
+    }
+  };
+
+  const obtenerHistoriaSieteDias = async (inversiones: Array<{ id: string; nombre: string }>) => {
+    setCargandoGrafico(true);
+    try {
+      const promesas = inversiones.map(async (inversion) => {
+        const ticker = inversion.nombre.toUpperCase().trim();
+        const idCoingecko = await buscarIdCoingecko(ticker);
+        if (!idCoingecko) return { key: inversion.id, data: [] };
+
+        const respuesta = await fetch(
+          `https://api.coingecko.com/api/v3/coins/${idCoingecko}/market_chart?vs_currency=usd&days=7&interval=hourly`
+        );
+        const datos = await respuesta.json();
+        const precios = Array.isArray(datos.prices)
+          ? datos.prices.map((entry: any[]) => entry[1])
+          : [];
+        return { key: inversion.id, data: precios };
+      });
+
+      const resultados = await Promise.all(promesas);
+      const nuevoHistorial = resultados.reduce<Record<string, number[]>>((acc, item) => {
+        acc[item.key] = item.data;
+        return acc;
+      }, {});
+      setHistoriasSemana(prev => ({ ...prev, ...nuevoHistorial }));
+    } catch (error) {
+      console.error('Error cargando historial semanal:', error);
+    } finally {
+      setCargandoGrafico(false);
+    }
+  };
+
+  const muestrearPrecios = (precios: number[]) => {
+    if (precios.length <= 7) return precios;
+    const step = Math.max(1, Math.floor(precios.length / 7));
+    const muestreados = precios.filter((_, index) => index % step === 0);
+    return muestreados.length > 7 ? muestreados.slice(0, 7) : muestreados;
+  };
+
   useFocusEffect(
     useCallback(() => {
       setDatosActuales([...misInversiones]);
@@ -15,6 +86,7 @@ export default function HomeScreen() {
         setCargandoPrecios(true);
         const datosNuevos = await actualizarPreciosEnTiempoReal();
         setDatosActuales([...datosNuevos]);
+        await obtenerHistoriaSieteDias(datosNuevos);
         setCargandoPrecios(false);
       };
 
@@ -116,21 +188,81 @@ export default function HomeScreen() {
           const rendimientoPct = inv.costo > 0 ? (gananciaUsd / inv.costo) * 100 : 0;
           const esPositivo = gananciaUsd >= 0;
           const precioUnitario = inv.cantidad > 0 ? inv.valor / inv.cantidad : 0;
+          const historia = historiasSemana[inv.id] || [];
+          const barras = muestrearPrecios(historia);
+          const tieneGrafico = barras.length > 0;
+          const minPrecio = tieneGrafico ? Math.min(...barras) : 0;
+          const maxPrecio = tieneGrafico ? Math.max(...barras) : 0;
+          const chartWidth = 1480;
+          const chartHeight = 280;
+          const paddingX = 20;
+          const paddingY = 24;
+          const usableWidth = chartWidth - paddingX * 2;
+          const usableHeight = chartHeight - paddingY * 2;
+
+          const puntos = barras.map((precio, index) => {
+            const x = paddingX + (usableWidth / Math.max(barras.length - 1, 1)) * index;
+            const normalizado = maxPrecio === minPrecio ? 0.5 : (precio - minPrecio) / (maxPrecio - minPrecio);
+            const y = paddingY + usableHeight - normalizado * usableHeight;
+            return { x, y, precio };
+          });
+
+          const pathData = puntos.length > 1
+            ? puntos.map((p, index) => `${index === 0 ? 'M' : 'L'} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(' ')
+            : '';
+
+          const labelsDias = Array.from({ length: 7 }, (_, index) => {
+            const fecha = new Date();
+            fecha.setDate(fecha.getDate() - (6 - index));
+            return fecha
+              .toLocaleDateString('es-ES', { weekday: 'short' })
+              .replace('.', '');
+          });
 
           return (
             <View key={inv.id} style={styles.card}>
-              <View style={{ flex: 1.5 }}>
-                <Text style={styles.cardName}>{inv.nombre}</Text>
-                <Text style={styles.cardQty}>{inv.cantidad.toFixed(4)} {inv.nombre}</Text>
-                <Text style={styles.cardValue}>
-                  ${precioUnitario.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </Text>
+              <View style={styles.cardRow}>
+                <View style={{ flex: 1.5 }}>
+                  <Text style={styles.cardName}>{inv.nombre}</Text>
+                  <Text style={styles.cardQty}>{inv.cantidad.toFixed(4)} {inv.nombre}</Text>
+                  <Text style={styles.cardValue}>
+                    ${precioUnitario.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </Text>
+                </View>
+                <View style={{ flex: 1, alignItems: 'flex-end' }}>
+                  <Text style={styles.cardValue}>${inv.valor.toFixed(2)}</Text>
+                  <Text style={[styles.rendimiento, { color: esPositivo ? '#10B981' : '#EF4444' }]}>
+                    {esPositivo ? '+' : ''}{gananciaUsd.toFixed(2)} ({rendimientoPct.toFixed(2)}%)
+                  </Text>
+                </View>
               </View>
-              <View style={{ flex: 1, alignItems: 'flex-end' }}>
-                <Text style={styles.cardValue}>${inv.valor.toFixed(2)}</Text>
-                <Text style={[styles.rendimiento, { color: esPositivo ? '#10B981' : '#EF4444' }]}>
-                  {esPositivo ? '+' : ''}{gananciaUsd.toFixed(2)} ({rendimientoPct.toFixed(2)}%)
-                </Text>
+              <View style={styles.chartSection}>
+                <Text style={styles.chartTitle}>Última semana (1W)</Text>
+                {tieneGrafico ? (
+                  <View style={styles.chartCard}>
+                    <Svg width="100%" height={chartHeight} viewBox={`0 0 ${chartWidth} ${chartHeight}`} preserveAspectRatio="xMinYMid meet">
+                      <Line x1={paddingX} y1={chartHeight - paddingY} x2={chartWidth - paddingX} y2={chartHeight - paddingY} stroke="#334155" strokeWidth="1" />
+                      <Line x1={paddingX} y1={paddingY} x2={paddingX} y2={chartHeight - paddingY} stroke="#334155" strokeWidth="1" />
+                      <Path d={pathData} fill="none" stroke="#22c55e" strokeWidth="2.5" />
+                      {puntos.map((punto, index) => (
+                        <React.Fragment key={index}>
+                          <Circle cx={punto.x} cy={punto.y} r="3" fill="#22c55e" />
+                          <SvgText x={punto.x} y={punto.y - 10} fill="#F8FAFC" fontSize="10" fontWeight="600" textAnchor="middle">
+                            ${punto.precio.toFixed(2)}
+                          </SvgText>
+                        </React.Fragment>
+                      ))}
+                      {labelsDias.map((dia, index) => {
+                        const x = paddingX + (usableWidth / Math.max(labelsDias.length - 1, 1)) * index;
+                        return <SvgText key={dia + index} x={x} y={chartHeight - 4} fill="#94A3B8" fontSize="10" textAnchor="middle">{dia}</SvgText>;
+                      })}
+                    </Svg>
+                  </View>
+                ) : (
+                  <Text style={styles.chartPlaceholder}>
+                    {cargandoGrafico ? 'Cargando gráfico...' : 'Sin historial disponible'}
+                  </Text>
+                )}
               </View>
             </View>
           );
@@ -165,12 +297,46 @@ const styles = StyleSheet.create({
     backgroundColor: '#1E293B',
     padding: 16,
     borderRadius: 16,
-    flexDirection: 'row',
+    flexDirection: 'column',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'stretch',
     marginBottom: 12,
     borderWidth: 1,
     borderColor: '#334155'
+  },
+  cardRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  chartSection: {
+    width: '100%',
+    marginTop: 8,
+  },
+  chartTitle: {
+    color: '#94A3B8',
+    fontSize: 13,
+    marginBottom: 10,
+    fontWeight: '600',
+  },
+  chartCard: {
+    backgroundColor: '#111827',
+    borderRadius: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 0,
+    alignItems: 'flex-start',
+    width: '100%',
+    overflow: 'hidden',
+    marginLeft: 0,
+    marginRight: 0,
+    maxWidth: '100%',
+  },
+  chartPlaceholder: {
+    color: '#94A3B8',
+    fontSize: 12,
+    textAlign: 'center',
+    paddingVertical: 8,
   },
   cardUnitPrice: {
     color: '#64748B', // Un gris más oscuro (slate-500) para darle jerarquía

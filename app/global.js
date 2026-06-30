@@ -44,14 +44,31 @@ export const actualizarPreciosEnTiempoReal = async () => {
         const respuestaSearch = await fetch(`https://api.coingecko.com/api/v3/search?query=${ticker}`);
         const datosSearch = await respuestaSearch.json();
         
-        // Buscamos la coincidencia exacta del símbolo/ticker
+        // Buscamos la coincidencia exacta del símbolo/ticker, nombre o id
         const monedaEncontrada = datosSearch.coins?.find(
-          coin => coin.symbol.toUpperCase() === ticker
+          coin =>
+            coin.symbol?.toUpperCase() === ticker ||
+            coin.name?.toUpperCase() === ticker ||
+            coin.id?.toUpperCase() === ticker
+        );
+
+        if (monedaEncontrada) {
+          return {
+            ticker: ticker,
+            idCoingecko: monedaEncontrada.id
+          };
+        }
+
+        const monedaFallback = datosSearch.coins?.find(
+          coin =>
+            coin.symbol?.toUpperCase().includes(ticker) ||
+            coin.name?.toUpperCase().includes(ticker) ||
+            coin.id?.toUpperCase().includes(ticker)
         );
 
         return {
           ticker: ticker,
-          idCoingecko: monedaEncontrada ? monedaEncontrada.id : null
+          idCoingecko: monedaFallback ? monedaFallback.id : null
         };
       } catch (err) {
         console.error(`Error buscando ID en CoinGecko para ${ticker}:`, err);
